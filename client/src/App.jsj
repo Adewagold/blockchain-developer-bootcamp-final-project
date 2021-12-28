@@ -1,0 +1,387 @@
+import React, { Component } from "react";
+import SimpleStorageContract from "./contracts/SimpleStorage.json";
+import InstitutionManager from "./contracts/InstitutionManager.json";
+import {INSTITUTION_CONTRACT} from "./config.js"
+import getWeb3 from "./getWeb3";
+import { QRCode } from "qrcode.react";
+
+import "./App.css";
+
+class App extends Component {
+  state = { storageValue: 0, web3: null, accounts: null, contract: null, institutionFactory:null };
+
+  componentDidMount = async () => {
+    try {
+      // Get network provider and web3 instance.
+      const web3 = await getWeb3();
+
+      // Use web3 to get the user's accounts.
+      const accounts = await web3.eth.getAccounts();
+      console.log(accounts);
+      // Get the contract instance.
+      const networkId = await web3.eth.net.getId();
+      const deployedNetwork = SimpleStorageContract.networks[networkId];
+      const instance = new web3.eth.Contract(
+        SimpleStorageContract.abi,
+        deployedNetwork && deployedNetwork.address,
+      );
+
+      //Get Institution Factory contract
+      const institutionFactoryInstance = new web3.eth.Contract(InstitutionManager.abi, INSTITUTION_CONTRACT);
+      this.setState({institutionFactoryInstance});
+
+      //Total Revenues Generated
+      const balance = await web3.eth.getBalance(institutionFactoryInstance._address);
+      this.setState({totalRevenuGenerated:balance})
+
+      //Central Revenue account
+      const centralAccountsCount = await institutionFactoryInstance.methods.remitanceAddressIndex().call();
+      this.setState({centralAccountsCount});
+      console.log(centralAccountsCount);
+      this.setState({centralAccounts:[]});
+      for(let i = 0; i<centralAccountsCount;i++){
+        const centralAccount = await institutionFactoryInstance.methods.centralAccounts(i).call();
+        const centralAccountBalance = await web3.eth.getBalance(centralAccount);
+        // Remittance account status
+        const remittanceAddressesStatus = await institutionFactoryInstance.methods.remittanceAddresses(centralAccount).call();
+        console.log("Remittance status: ",remittanceAddressesStatus);
+        const centralRevenueDetails = {centralAccount, centralAccountBalance, remittanceAddressesStatus};
+        console.log(centralRevenueDetails);
+        this.setState({
+       
+          centralAccounts:[...this.state.centralAccounts,centralRevenueDetails]
+        });
+        console.log("Institution",centralAccount);
+      }
+
+      //Total number of created institution
+      //institutionIndex
+      const institutionIndex = await institutionFactoryInstance.methods.institutionIndex().call();
+      this.setState({institutionIndex});
+      console.log(institutionIndex);
+      this.setState({institutions:[]});
+      for(let i = 1; i<=institutionIndex;i++){
+        const institution = await institutionFactoryInstance.methods.institutions(i).call();
+        const institutionBalance = await web3.eth.getBalance(institution);
+        //Institution Contract Details
+        const institutionInfo = await institutionFactoryInstance.methods.getInstitution(i).call();
+        console.log(institutionInfo);
+        const institutionDetails = {institution, institutionBalance, institutionInfo};
+        console.log(institutionDetails);
+        
+        this.setState({
+       
+          institutions:[...this.state.institutions,institutionDetails]
+        });
+        console.log("Institutions ",institution);
+      }
+
+      //Get record Manager instance
+      // const recordManagerContract = await institutionFactoryInstance.methods.recordManager().call();
+      // this.setState({recordManagerBalance:0});
+      // this.setState({institutionFactoryInUse:"Not set *"});
+      // if(recordManagerContract!== "0x0000000000000000000000000000000000000000"){
+      //   const recordManagerInstance = new web3.eth.Contract(RecordManagerContract.abi, recordManagerContract);
+      //   console.log(recordManagerInstance);
+      // // Available Balance
+      // const recordManagerBalance = await web3.eth.getBalance(recordManagerInstance._address);
+      // this.setState({recordManagerBalance:recordManagerBalance/1000000000000000000});
+      // this.setState({recordManagerInstance});
+      // //Current factory in use
+
+      // const institutionFactoryInUse = await recordManagerInstance.methods.currentInstitutionFactory().call();
+      // this.setState({institutionFactoryInUse});
+      // //Total number of institutions
+      // const totalInstitution = await recordManagerInstance.methods.totalInstitution().call();
+      // console.log(totalInstitution);
+      // this.setState({institutions:[]});
+      // for(var i = 1; i<=totalInstitution;i++){
+      //   const institution = await recordManagerInstance.methods.institutions(i).call()
+      //   this.setState({
+       
+      //     institutions:[...this.state.institutions,institution]
+      //   });
+      //   console.log("Institution",institution);
+      // }
+
+ 
+      
+      // }
+      
+
+
+      // Set web3, accounts, and contract to the state, and then proceed with an
+      // example of interacting with the contract's methods.
+      
+      this.setState({ web3, accounts, contract: instance }, this.runExample);
+    } catch (error) {
+      // Catch any errors for any of the above operations.
+      alert(
+        `Failed to load web3, accounts, or contract. Check console for details.`,
+      );
+      console.error(error);
+    }
+  };
+
+  runExample = async () => {
+    const { accounts, contract } = this.state;
+
+    // Stores a given value, 5 by default.
+    // await contract.methods.set(10).send({ from: accounts[0] });
+
+    // Get the value from the contract to prove it worked.
+    const response = await contract.methods.get().call();
+    this.setState({institutionFactory: INSTITUTION_CONTRACT});
+    // Update state with the result.
+    this.setState({ storageValue: response });
+  };
+
+
+updateRevenueAccount(revenueAccount) {
+    this.setState({ loading: true })
+    this.state.institutionFactoryInstance.methods.addRemittanceAddresses(revenueAccount).send({ from: this.state.accounts[0]})
+    .once('receipt', (receipt) => {
+      window.location.reload(false);
+      this.setState({ loading: false })
+ })}
+
+ updateInstitutionFactoryContract(institutionFactoryContract) {
+   try{  this.setState({ loading: true })
+   this.state.recordManagerInstance.methods.addInstitutionFactory(institutionFactoryContract).send({ from: this.state.accounts[0]})
+   .once('receipt', (receipt) => {
+     window.location.reload(false);
+     this.setState({institutionFactoryContract});
+     this.setState({ loading: false });
+ })}
+ catch(error){
+
+ }
+}
+
+ createNewInstitution(institutionName,contactAddress, additionalInformation, phone, email) { 
+    try{
+      console.log(institutionName,contactAddress, additionalInformation, phone, email);
+      this.state.institutionFactoryInstance
+      .methods
+      .createInstitution(institutionName, contactAddress, additionalInformation, phone, email).send({ from: this.state.accounts[0]})
+      .once('receipt', (receipt) => {
+        window.location.reload(false);
+      });
+    }catch(error){
+      console.log(error);
+    }
+}
+
+handleAccountChange(event) {
+  this.setState({selectedAccount: event.target.value});
+}
+
+handleInstitutionChange(event) {
+  this.setState({selectedInstitution: event.target.value});
+}
+
+remitFunds(amount, remittanceAccount, institution){
+  let amountInGWEI = amount * 1000000000000000000;
+
+  console.log(amount, this.state.selectedAccount, this.state.selectedInstitution);
+  try{
+    this.state.institutionFactoryInstance
+    .methods
+    .remitFunds(institution, amount, remittanceAccount).send({ from: this.state.accounts[0]})
+    .once('receipt', (receipt) => {
+      window.location.reload(false);
+    });
+  }catch(error){
+    console.log(error);
+  }
+}
+
+ constructor(props) {
+  super(props);
+  
+  this.updateRevenueAccount = this.updateRevenueAccount.bind(this);
+  this.createNewInstitution = this.createNewInstitution.bind(this);
+  this.handleAccountChange = this.handleAccountChange.bind(this);
+  this.handleInstitutionChange = this.handleInstitutionChange.bind(this);
+  this.remitFunds = this.remitFunds.bind(this);
+}
+
+  render() {
+
+    if (!this.state.web3) {
+      return <div>Loading Web3, accounts, and contract...</div>;
+    }
+    return (
+      <div className="App">
+        <h1>IRM Dapp</h1>
+        <p>A decentralized Institution Revenue management application.</p>
+
+        <h2>Available Balance: ETH {this.state.totalRevenuGenerated }</h2>
+        <p>Central Accounts Count: {this.state.centralAccountsCount}</p>
+        <table className="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Account</th>
+            <th scope="col">Balance</th>
+            <th scope="col">Active</th>
+          </tr>
+        </thead>
+        <tbody>
+          { this.state.centralAccounts.map((accontDetails, key) => {
+                return(
+                  
+                    <tr className="table-dark" key={key}>
+                      <td>{accontDetails.centralAccount}</td>
+                      <td>{accontDetails.centralAccountBalance}</td>
+                      <td><input type="checkbox" 
+                      name={accontDetails.centralAccount} 
+                      defaultChecked = {accontDetails.remittanceAddressesStatus}
+                      /></td>
+                    </tr>
+
+                )
+              })}
+    
+          </tbody>
+        </table>
+
+        <p>Update Institution Revenue Address</p>
+            <div className="col-md-4 container-fluid">
+              <form onSubmit={
+                  (event) => {event.preventDefault() //prevent from changing the form 
+                      this.updateRevenueAccount(this.revenueAccount.value)
+                      }
+                  }>
+                <input id="newTask" ref={(input) => this.revenueAccount = input} type="text" className="form-control" placeholder="Enter revenue central contract address..." required />
+                <input type="submit" hidden={true} />
+              </form>
+        </div>
+        <br />
+        <h3>Add a new Institution</h3>
+        <div className="col-md-4 container-fluid">
+              <form onSubmit={
+                  (event) => {event.preventDefault() //prevent from changing the form 
+                      this.createNewInstitution(this.institutionName.value, this.contactAddress.value,
+                        this.additionalInformation.value,
+                        this.phone.value,
+                        this.email.value)
+                      }
+                  }>
+                
+               <div className="form-group"> 
+               <label className="form-label mt-4"> Name</label>
+               <input id="newInstitutionName" ref={(input) => this.institutionName = input} type="text" className="form-control" placeholder="Institution Name..." required />
+               </div>
+               <div className="form-group"> <label className="form-label mt-4"> Address</label> 
+               <input id="newInstitutionAddress" ref={(input) => this.contactAddress = input} type="text" className="form-control" placeholder="Institution Address..." required /></div>
+               <div className="form-group"> <label  className="form-label mt-4">Additional information</label>
+               <input id="newInstitutionAdditionalInfo" ref={(input) => this.additionalInformation = input} type="text" className="form-control" placeholder="Additional Information..." required /></div>
+               <div className="form-group"> <label className="form-label mt-4">Phone</label>
+               <input id="newInstitutionPhone" ref={(input) => this.phone = input} type="text" className="form-control" placeholder="Phone..." required /></div>
+                <div className="form-group"><label className="form-label mt-4">Email</label>
+                <input id="newInstitutionEmail" ref={(input) => this.email = input} type="text" className="form-control" placeholder="Email..." required /></div>
+                <br />
+                <input type="submit" value="Submit"/>
+              </form>
+        </div>
+        <hr />
+
+        <h2>Institution Factory </h2>
+        <p>Only owner should be able to see this part</p>
+        <h4>Factory address: {this.state.institutionFactory}</h4>
+        
+        <p>Current Revenue Manager: {this.state.recordManager}</p>
+          <div className="col-md-4 container-fluid">
+              <form onSubmit={
+                  (event) => {event.preventDefault() //prevent from changing the form 
+                      this.updateRecordManager(this.recordManager.value)
+                      }
+                  }>
+                <input id="newTask" ref={(input) => this.recordManager = input} type="text" className="form-control" placeholder="Update record manager address..." required />
+                <input type="submit" hidden={true} />
+              </form>
+        </div>
+        
+        <h2>List of Institution Users </h2>
+        
+        <hr />
+        <h2>Institutions ({this.state.institutionIndex})</h2>
+        <table className="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Account</th>
+            <th scope="col">Name</th>
+            <th scope="col">Address</th>
+            <th scope="col">Phone</th>
+            <th scope="col">Email</th>
+            <th scope="col">Balance</th>
+          </tr>
+        </thead>
+          <tbody>
+              { this.state.institutions.map((institutionDetails, key) => {
+                return(
+                  
+                    <tr className="table-dark" key={key}>
+                      <td>{institutionDetails.institution}</td>
+                      <td>{institutionDetails.institutionInfo[0]}</td>
+                      <td>{institutionDetails.institutionInfo[1]}</td>
+                      <td>{institutionDetails.institutionInfo[3]}</td>
+                      <td>{institutionDetails.institutionInfo[4]}</td>
+                      <td>{institutionDetails.institutionBalance}</td>
+                    </tr>
+                )
+              })}
+          </tbody>
+        </table>
+        <div className="container">
+          <legend>Remittance</legend>
+        <form onSubmit={
+                  (event) => {event.preventDefault() //prevent from changing the form 
+                      this.remitFunds(this.remittanceAmount.value, this.remittanceAccount.value,
+                        this.institutionAccount.value)
+                      }
+                  }>
+
+          <label>
+            Select Central Account
+            <select className="form-control" 
+            value={this.state.selectedAccount} 
+            onChange={this.handleAccountChange} 
+            ref={(input) => this.remittanceAccount = input}
+            >
+              <option value="default">--- Select Remittance Account ---</option>
+            { this.state.centralAccounts.map((accontDetails, key) => {
+                return(
+                  <option value={accontDetails.centralAccount} key={key}>{accontDetails.centralAccount}</option>
+                )
+              })}
+              </select>
+          </label>
+          <input id="remittanceAmount" ref={(input) => this.remittanceAmount = input} type="number" className="form-control" placeholder="Enter amount to remit" required />
+          <label>
+            Select Institution
+            <select className="form-control" 
+            value={this.state.selectedInstitution} 
+            onChange={this.handleInstitutionChange} ref={(input) => this.institutionAccount = input}
+            >
+              <option value="default">--- Select Institution to debit---</option>
+            
+              { this.state.institutions.map((institutionDetails, key) => {
+                return(
+                  <option value={key} key={key}>{institutionDetails.institutionInfo[0]}</option>
+                )
+              })}
+              </select>
+          </label>
+          <div className="form-group">
+          <input type="submit" value="Remit to selected account" />
+          </div>
+        </form>
+        </div>
+
+      </div>
+    );
+  }
+}
+
+export default App;
