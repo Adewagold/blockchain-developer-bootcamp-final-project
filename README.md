@@ -9,7 +9,7 @@ Blockchain Developer Bootcamp Final Project
 ### Project live url
 The project is deployed with surge and accessible via [https://axiomatic-scissors.surge.sh/](https://axiomatic-scissors.surge.sh/)
 
-### Internal Revenue Management Decentralized Application.
+### Project Description: Internal Revenue Management Decentralized Application.
 This projects basically allows a central financial body to accept fund remittances into a list of accounts provided by the institution. The scope is currently limited such that, only the owner can create a new institution from the contract. Each institution has a new contract address generated upon the successful creation and is stored in the `institutionManager` contract storage.
 
 Here's some user stories
