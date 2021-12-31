@@ -36,4 +36,4 @@ Once, the contract is deployed, update the `config.js` file with the contract ad
 Run the command `truffle test` in the project directory to test the project.
 
 ### Screencast of the project
-(Click to watch on Youtube)[https://youtu.be/2_moEDs6vG0]
+[Click to watch on Youtube](https://youtu.be/2_moEDs6vG0)
