@@ -1,12 +1,15 @@
 ## Public Ethereum wallet for certification:
 `0x19698497422ab2A3AaB139FDEFB76bAfa650CcA5`
-# blockchain-developer-bootcamp-final-project
+
+### Contract Address on Public Testnet (Ropsten)
+
+### blockchain-developer-bootcamp-final-project
 Blockchain Developer Bootcamp Final Project
 
 ### Project live url
 The project is deployed with surge and accessible via [https://axiomatic-scissors.surge.sh/](https://axiomatic-scissors.surge.sh/)
 
-## Internal Revenue Management Decentralized Application.
+### Internal Revenue Management Decentralized Application.
 This projects basically allows a central financial body to accept fund remittances into a list of accounts provided by the institution. The scope is currently limited such that, only the owner can create a new institution from the contract. Each institution has a new contract address generated upon the successful creation and is stored in the `institutionManager` contract storage.
 
 Here's some user stories
@@ -26,7 +29,7 @@ Here's some user stories
 7. Add a treasury user account using another account to an associated institution
 8. Use the treasury account to remit funds from the institution contract to any of the central account
 9. Check the total balance of institution and the central accounts
-## Demo Accounts Used
+### Demo Accounts Used
 Owner account: 0xEaa78a7f55B4673760824469a62A46ADb018DF4b
 Owner private key: 5f65e8b5cc37d5970934275d07f868fdb653285c98b510ac2146437850decd32
 
@@ -49,19 +52,20 @@ Owner private key: 5f65e8b5cc37d5970934275d07f868fdb653285c98b510ac2146437850dec
 ### Prerequisites 
 Node.js >= v14
 Truffle and Ganache
-### Running the application
+
+### Deploying contract locally.
+Ensure to modify the `truffle-config.js` to your local development network and run `truffle compile && truffle deploy` in the terminal using port `8545`
+`truffle migrate --network development`
+`truffle console --network development`
+Once, the contract is deployed, update the `config.js` file in `client` directory with the deployed contract address of `InstitutionManager`.
+### Running the application locally
 1. Clone the github repository
 2. Go into the directory via terminal using cd `final-project` 
 3. run `npm install` command
-4. start the frontend with `npm start` and access the frontend on `http:localhost:3000`
+4. cd into `client` directory and start the frontend with `npm start` and access the frontend on `http:localhost:3000`
 
 The `client` directory contains the frontend part of the project and the deployed contract address is stored in the `config.js` file.
 If you run a new deployment of the contract, you should update the config.js file with the appropriate contract address in order for the contract instantiation to work.
-
-### Deploying contract locally.
-Ensure to modify the `truffle-config.js` to your local development network and run `truffle compile && truffle deploy` in the terminal
-
-Once, the contract is deployed, update the `config.js` file with the contract address.
 
 ### Running unit tests
 Run the command `truffle test` in the project directory to test the project.
