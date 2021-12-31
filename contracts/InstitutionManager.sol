@@ -6,12 +6,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract InstitutionManager is Ownable{
 
+    //Index to track the number of registered institution
     uint public institutionIndex = 0;
     
+    //Mapping for institutionIndex and associated contract address
     mapping (uint=>address payable) public institutions;
 
+    //Index of the number of remittance addresses created
     uint public remitanceAddressIndex;
 
+    //Mapping to create and enable remittance addresses
     mapping (address=>bool) public remittanceAddresses;
 
     address[] public centralAccounts;
@@ -113,12 +117,22 @@ contract InstitutionManager is Ownable{
         }
     }
 
+    /**
+    This method is for disabling a treasury user from remitting funds
+    @param _institutionId institution id associated with the user
+     */
     function disableTreasuryUsers(uint _institutionId, address _treasurerAddress) public onlyOwner{
         require(institutions[_institutionId]!=address(0), "Institution address not found!");
         require(treasuryUsers[_treasurerAddress][_institutionId], "Treasury user does not exist");
         treasuryUsers[_treasurerAddress][_institutionId] = !treasuryUsers[_treasurerAddress][_institutionId];
     }
 
+    /**
+    This method allows funds to be withdrawn from an institution account 
+    @param _institutionId institution id to debit amount from
+    @param amount amount to be debited
+    @param remittanceAddress remittance address
+     */
     function remitFunds(uint _institutionId, uint amount, address remittanceAddress) public returns(bool) {
         
         //Confirm address
@@ -144,4 +158,15 @@ contract InstitutionManager is Ownable{
 
    function deposit() external payable{}
     receive() external payable{}
+
+    /**
+    @param amount The amount to be disbursed to a destination account
+    @param destinationAccount The beneficiary of the funds;
+     */
+    function disburse(uint amount, address destinationAccount) public onlyOwner{
+        require(totalRevenue>= amount, "Insufficient funds.");
+        totalRevenue-=amount;
+        (bool success, ) = payable(destinationAccount).call{value:amount}("");
+        require(success, "Withdrawal failed");
+    }
 }

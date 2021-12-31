@@ -1,9 +1,7 @@
 import React, { Component } from "react";
-import SimpleStorageContract from "./contracts/SimpleStorage.json";
 import InstitutionManager from "./contracts/InstitutionManager.json";
 import {INSTITUTION_CONTRACT} from "./config.js"
 import getWeb3 from "./getWeb3";
-import  Web3 from 'web3';
 
 import "./App.css";
 import "./bootstrap.css";
@@ -23,11 +21,7 @@ class App extends Component {
       console.log(accounts);
       // Get the contract instance.
       const networkId = await web3.eth.net.getId();
-      const deployedNetwork = SimpleStorageContract.networks[networkId];
-      const instance = new web3.eth.Contract(
-        SimpleStorageContract.abi,
-        deployedNetwork && deployedNetwork.address,
-      );
+      console.log(networkId);
 
 
       //Get Institution Factory contract
@@ -67,8 +61,6 @@ class App extends Component {
         console.log("Institution",centralAccount);
       }
 
-
-
       //Total number of created institution
       //institutionIndex
       const institutionIndex = await institutionFactoryInstance.methods.institutionIndex().call();
@@ -95,7 +87,7 @@ class App extends Component {
       // Set web3, accounts, and contract to the state, and then proceed with an
       // example of interacting with the contract's methods.
       
-      this.setState({ web3, accounts, contract: instance }, this.runExample);
+      this.setState({ web3, accounts }, this.runExample);
     } catch (error) {
       // Catch any errors for any of the above operations.
       alert(
@@ -105,27 +97,21 @@ class App extends Component {
     }
   };
 
-  runExample = async () => {
-    const { accounts, contract } = this.state;
-
-    // Stores a given value, 5 by default.
-    // await contract.methods.set(10).send({ from: accounts[0] });
-
-    // Get the value from the contract to prove it worked.
-    const response = await contract.methods.get().call();
-    this.setState({institutionFactory: INSTITUTION_CONTRACT});
-    // Update state with the result.
-    this.setState({ storageValue: response });
-  };
-
 
 updateRevenueAccount(revenueAccount) {
+  try{
     this.setState({ loading: true })
     this.state.institutionFactoryInstance.methods.addRemittanceAddresses(revenueAccount).send({ from: this.state.accounts[0]})
     .once('receipt', (receipt) => {
       window.location.reload(false);
       this.setState({ loading: false })
  })}
+  catch(error){
+    console.log(error);
+    this.setState({hasError:true});
+    this.setState({errorMessage:error});
+  }
+}
 
  updateInstitutionFactoryContract(institutionFactoryContract) {
    try{  this.setState({ loading: true })
@@ -180,6 +166,8 @@ remitFunds(amount, remittanceAccount, institution){
     });
   }catch(error){
     console.log(error);
+    this.setState({hasError:true});
+    this.setState({errorMessage:error});
   }
 }
 
@@ -218,6 +206,15 @@ addTreasuryUser(treasuryAccount){
     }
     return (
       <div className="App">
+        {this.state.hasError ?
+        <div className="alert alert-dismissible alert-warning">
+        <button type="button" className="btn-close" data-bs-dismiss="alert"></button>
+        <h4 className="alert-heading">An Error has occured!</h4>
+        <p className="mb-0">{this.state.errorMessage}.</p>
+      </div>
+        :
+        <p></p>
+        }
         <h1>IRM Dapp</h1>
         <p>A decentralized Institution Revenue management application.</p>
         <h3>Central Accounts: {this.state.centralAccountsCount}</h3>
